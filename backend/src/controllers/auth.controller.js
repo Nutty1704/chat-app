@@ -95,8 +95,16 @@ export const updateProfile = async (req, res) => {
             return res.status(400).json({ message: "Profile picture is required" });
         }
 
+        const prevImage = await User.findById(userId).select("profilePic");
+
         const uploadResponse = await cloudinary.uploader.upload(profilePic);
         const updatedUser = await User.findByIdAndUpdate(userId, {profilePic: uploadResponse.secure_url}, {new: true});
+
+        if (prevImage.profilePic) {
+            const imagePublicId = prevImage.profilePic.split("/").slice(-1)[0].split(".")[0]; // get the public id of the image after remvoing the extension
+
+            await cloudinary.uploader.destroy(imagePublicId);
+        }
 
         res.status(200).json(updatedUser);
 
